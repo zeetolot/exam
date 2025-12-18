@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>獸醫國考冒險者 - V6.2 穩定版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f0f2f5; color: #1e293b; overflow-x: hidden; -webkit-tap-highlight-color: transparent; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.5); }
+        .tap-effect:active { transform: scale(0.96); transition: transform 0.1s; }
+        .option-btn { transition: all 0.2s; user-select: none; }
+        .option-btn:active { background-color: #eef2ff; border-color: #6366f1; }
+        .option-disabled { opacity: 0.3; pointer-events: none; background-color: #f3f4f6; border-color: #e5e7eb; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .year-tab.active { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.3); transform: scale(1.05); }
+        html, body { height: 100%; overscroll-behavior-y: none; }
+        #content-area { padding-bottom: 120px; }
+        header { padding-top: env(safe-area-inset-top); }
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <header class="sticky top-0 z-50 glass px-4 py-3 shadow-sm">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-indigo-600 rounded-full flex items-center justify-center text-white font-black shadow-lg" id="level-circle">1</div>
+                <div>
+                    <h1 class="text-sm font-black text-slate-800">獸醫國考冒險者</h1>
+                    <div class="w-20 h-1.5 bg-gray-200 rounded-full mt-1 overflow-hidden"><div id="xp-bar" class="h-full bg-indigo-500" style="width: 0%"></div></div>
+                </div>
+            </div>
+            <button onclick="changeView('shop')" class="tap-effect bg-amber-50 px-3 py-1.5 rounded-xl flex items-center gap-2 border border-amber-100 shadow-sm">
+                <i class="fas fa-coins text-amber-500"></i><span id="coin-count" class="font-bold text-amber-700 text-xs">0</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-6">
+        <div id="content-area">
+            
+            <section id="view-home" class="space-y-6 animate-fade">
+                <!-- 每日任務 -->
+                <div class="bg-white p-4 rounded-2xl shadow-sm border border-orange-100">
+                    <h2 class="font-black text-gray-800 mb-3 flex items-center gap-2 text-sm"><i class="fas fa-calendar-check text-orange-500"></i> 每日任務</h2>
+                    <div id="daily-quest-list" class="space-y-2"></div>
+                </div>
+
+                <!-- 模式切換 -->
+                <div class="flex bg-gray-200 p-1 rounded-xl">
+                    <button onclick="switchMode('year')" id="btn-mode-year" class="flex-1 py-3 rounded-lg text-xs font-bold bg-white text-indigo-600 shadow-sm transition-all tap-effect">年份模式</button>
+                    <button onclick="switchMode('subject')" id="btn-mode-subject" class="flex-1 py-3 rounded-lg text-xs font-bold text-gray-500 transition-all tap-effect">科目專精</button>
+                </div>
+
+                <!-- 年份模式面板 -->
+                <div id="mode-year-content">
+                    <div class="relative mt-4">
+                        <div id="year-tabs-container" class="flex gap-2 overflow-x-auto hide-scrollbar py-2 px-1 scroll-smooth"></div>
+                    </div>
+                    <div class="mt-4 bg-gradient-to-br from-slate-800 to-slate-900 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden transition-all duration-500" id="banner-year">
+                        <div class="relative z-10 flex justify-between items-start">
+                            <div>
+                                <p class="text-white/50 text-[10px] font-bold tracking-widest mb-1">DB STATUS</p>
+                                <div class="flex items-baseline gap-2"><span class="text-3xl font-black" id="year-display">114年</span></div>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs opacity-60">累積錯題</p>
+                                <p class="font-bold text-xl text-rose-300"><span class="error-count-display">0</span> <span class="text-xs text-white">題</span></p>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex flex-wrap gap-2 relative z-10">
+                             <div class="bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-medium border border-white/10"><i class="fas fa-database text-green-400"></i> <span class="total-db-display">總: 0</span></div>
+                             <div class="bg-white/10 px-3 py-1.5 rounded-lg text-[10px] font-medium border border-white/10"><i class="fas fa-list-ol text-blue-400"></i> 本區: <span id="year-q-count">0</span></div>
+                        </div>
+                        <i class="fas fa-layer-group absolute -right-4 -bottom-4 text-[8rem] text-white opacity-5"></i>
+                    </div>
+                </div>
+
+                <!-- 科目模式面板 -->
+                <div id="mode-subject-content" class="hidden mt-4">
+                    <div class="bg-gradient-to-br from-indigo-600 to-blue-500 rounded-[2rem] p-6 text-white shadow-xl relative overflow-hidden">
+                        <div class="relative z-10">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="text-xl font-black mb-1">全科大亂鬥</h3>
+                                    <p class="text-xs opacity-80 mb-4">跨年份集中特訓</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-xs opacity-60">總錯題</p>
+                                    <p class="font-bold text-xl text-rose-300"><span class="error-count-display">0</span> <span class="text-xs text-white">題</span></p>
+                                </div>
+                            </div>
+                            <div class="flex gap-2 text-[10px] font-bold">
+                                <div class="bg-white/20 px-3 py-1.5 rounded-lg border border-white/10"><i class="fas fa-database"></i> <span class="total-db-display">總: 0</span></div>
+                                <span class="bg-rose-500/80 px-2 py-1 rounded flex items-center gap-1"><i class="fas fa-fire"></i> 錯題優先</span>
+                            </div>
+                        </div>
+                        <i class="fas fa-brain absolute -right-4 -bottom-4 text-[8rem] text-white opacity-10"></i>
+                    </div>
+                </div>
+
+                <!-- 副本按鈕 -->
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                    <button onclick="startDungeon('pathology')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-red-50 text-red-500 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-microscope"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="pathology">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">病理學</span><span class="text-[10px] text-gray-400 quest-count" data-sub="pathology">0 題</span></div>
+                    </button>
+                    <button onclick="startDungeon('pharmacology')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-blue-50 text-blue-500 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-pills"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="pharmacology">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">藥理學</span><span class="text-[10px] text-gray-400 quest-count" data-sub="pharmacology">0 題</span></div>
+                    </button>
+                    <button onclick="startDungeon('diagnosis')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-purple-50 text-purple-500 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-flask"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="diagnosis">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">實驗診斷</span><span class="text-[10px] text-gray-400 quest-count" data-sub="diagnosis">0 題</span></div>
+                    </button>
+                    <button onclick="startDungeon('general')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-orange-50 text-orange-500 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-dog"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="general">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">普通疾病</span><span class="text-[10px] text-gray-400 quest-count" data-sub="general">0 題</span></div>
+                    </button>
+                    <button onclick="startDungeon('infectious')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-green-50 text-green-600 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-virus"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="infectious">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">傳染病學</span><span class="text-[10px] text-gray-400 quest-count" data-sub="infectious">0 題</span></div>
+                    </button>
+                    <button onclick="startDungeon('public')" class="dungeon-card tap-effect bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex flex-col gap-1 relative overflow-hidden">
+                        <div class="flex justify-between items-center w-full"><div class="w-8 h-8 bg-cyan-50 text-cyan-600 rounded-lg flex items-center justify-center text-sm"><i class="fas fa-globe-asia"></i></div><span class="text-[10px] font-bold text-rose-500 bg-rose-50 px-1.5 py-0.5 rounded error-badge" data-sub="public">0錯</span></div>
+                        <div class="text-left mt-1"><span class="block text-xs font-bold text-gray-700">公共衛生</span><span class="text-[10px] text-gray-400 quest-count" data-sub="public">0 題</span></div>
+                    </button>
+                </div>
+            </section>
+
+            <!-- 戰鬥視窗 -->
+            <section id="view-battle" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <button onclick="changeView('home')" class="w-10 h-10 bg-white rounded-full shadow-sm flex items-center justify-center text-gray-400"><i class="fas fa-chevron-left"></i></button>
+                    <p id="battle-subject" class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded">SUBJECT</p>
+                    <div class="w-10 text-center font-black text-gray-300 text-sm" id="battle-progress">1/10</div>
+                </div>
+                <div class="bg-white rounded-[2rem] p-6 shadow-xl mb-6 min-h-[200px] flex items-center justify-center relative">
+                    <div class="absolute -top-3 left-6 bg-indigo-600 text-white px-3 py-1 rounded-lg text-[10px] font-bold shadow-lg" id="battle-year-tag">114年</div>
+                    <div id="battle-error-tag" class="hidden absolute -top-3 right-6 bg-rose-500 text-white px-3 py-1 rounded-lg text-[10px] font-bold shadow-lg"><i class="fas fa-fire mr-1"></i>錯題重練</div>
+                    <p id="question-text" class="text-lg font-bold text-center leading-relaxed text-gray-800"></p>
+                </div>
+                <div id="options-box" class="space-y-3"></div>
+            </section>
+
+            <!-- 管理介面 -->
+            <section id="view-import" class="hidden space-y-4">
+                <div class="flex items-center justify-between"><h2 class="font-black text-xl">管理中心</h2><button onclick="changeView('home')"><i class="fas fa-times text-gray-400"></i></button></div>
+                <div class="flex bg-gray-100 p-1 rounded-xl mb-2">
+                    <button onclick="switchTab('import')" id="tab-import" class="flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-indigo-600">匯入</button>
+                    <button onclick="switchTab('manage')" id="tab-manage" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-500">清除</button>
+                    <button onclick="switchTab('backup')" id="tab-backup" class="flex-1 py-2 text-xs font-bold rounded-lg text-gray-500">備份</button>
+                </div>
+                <!-- 匯入 -->
+                <div id="panel-import" class="space-y-3">
+                    <div class="flex gap-2"><select id="i-year" class="flex-1 p-2 rounded border text-sm"></select><select id="i-sub" class="flex-1 p-2 rounded border text-sm"><option value="pathology">獸醫病理學</option><option value="pharmacology">獸醫藥理學</option><option value="diagnosis">實驗診斷學</option><option value="general">普通疾病學</option><option value="infectious">傳染病學</option><option value="public">公共衛生學</option></select></div>
+                    <textarea id="i-q" class="w-full h-32 p-3 rounded border text-sm" placeholder="題目..."></textarea>
+                    <textarea id="i-a" class="w-full h-24 p-3 rounded border text-sm" placeholder="答案..."></textarea>
+                    <button onclick="doImport()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">解析並存檔</button>
+                </div>
+                <!-- 清除 -->
+                <div id="panel-manage" class="hidden space-y-3">
+                    <div class="flex gap-2"><select id="m-year" class="flex-1 p-2 rounded border text-sm"></select><select id="m-sub" class="flex-1 p-2 rounded border text-sm"><option value="all">全科</option><option value="pathology">病理</option><option value="pharmacology">藥理</option><option value="diagnosis">診斷</option><option value="general">普通</option><option value="infectious">傳染</option><option value="public">公衛</option></select></div>
+                    <div class="p-4 bg-white rounded border"><p>數量: <span id="m-count" class="font-bold">0</span></p></div>
+                    <button onclick="doClear()" class="w-full bg-red-600 text-white py-3 rounded-xl font-bold">清除資料</button>
+                    <hr class="border-gray-200 my-4">
+                    <button onclick="clearErrors()" class="w-full border-2 border-rose-500 text-rose-500 py-3 rounded-xl font-bold">清空錯題本</button>
+                </div>
+                <!-- 備份 -->
+                <div id="panel-backup" class="hidden space-y-3">
+                    <textarea id="b-code" class="w-full h-32 p-3 rounded border text-xs" placeholder="備份碼..."></textarea>
+                    <div class="flex gap-2"><button onclick="doExport()" class="flex-1 bg-gray-800 text-white py-3 rounded-xl">匯出</button><button onclick="doRestore()" class="flex-1 bg-green-600 text-white py-3 rounded-xl">還原</button></div>
+                </div>
+            </section>
+
+            <!-- 商店 -->
+            <section id="view-shop" class="hidden space-y-4">
+                <div class="flex justify-between"><h2 class="font-black text-2xl">商店</h2><button onclick="changeView('home')"><i class="fas fa-times"></i></button></div>
+                <div class="bg-white p-5 rounded-3xl shadow-sm flex justify-between items-center">
+                    <div class="flex items-center gap-4"><div class="w-12 h-12 bg-indigo-50 text-indigo-500 rounded-2xl flex items-center justify-center text-xl"><i class="fas fa-magic"></i></div><div><p class="font-bold">二選一</p><p class="text-xs text-gray-400">刪除2錯誤</p></div></div>
+                    <button onclick="useItem()" class="bg-amber-500 text-white px-5 py-2 rounded-xl font-bold text-xs shadow-lg">100 <i class="fas fa-coins"></i></button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal -->
+    <div id="msg-modal" class="hidden fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-xs text-center shadow-xl">
+            <div id="m-icon" class="text-4xl mb-3"></div><h3 id="m-title" class="text-xl font-bold mb-2"></h3><p id="m-desc" class="text-sm text-gray-500 mb-6"></p>
+            <button onclick="closeModal()" class="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">確定</button>
+        </div>
+    </div>
+
+    <script>
+        let db = {}, state = { lv:1, xp:0, coin:0, year:'114', mode:'year', errs:{pathology:[],pharmacology:[],diagnosis:[],general:[],infectious:[],public:[]} };
+        const subMap = {pathology:'獸醫病理學',pharmacology:'獸醫藥理學',diagnosis:'實驗診斷學',general:'普通疾病學',infectious:'傳染病學',public:'公共衛生學'};
+        const shortMap = {pathology:'病理',pharmacology:'藥理',diagnosis:'診斷',general:'普通',infectious:'傳染',public:'公衛'};
+
+        // 初始化
+        for(let y=114; y>=104; y--) db[y] = {pathology:[],pharmacology:[],diagnosis:[],general:[],infectious:[],public:[]};
+        
+        window.onload = () => {
+            const saved = localStorage.getItem('vet_exam_v6');
+            if(saved) {
+                const d = JSON.parse(saved);
+                state = {...state, ...d.state};
+                if(d.db) { for(let y in d.db) { if(!db[y]) db[y]=d.db[y]; else for(let s in d.db[y]) db[y][s] = d.db[y][s]; }}
+            }
+            if(!state.errs) state.errs = {pathology:[],pharmacology:[],diagnosis:[],general:[],infectious:[],public:[]};
+            
+            renderYears();
+            updateUI();
+            checkDaily();
+            switchMode(state.mode);
+            switchYear(state.year);
+        };
+
+        function save() { localStorage.setItem('vet_exam_v6', JSON.stringify({state, db})); }
+        function el(id) { return document.getElementById(id); }
+        function els(sel) { return document.querySelectorAll(sel); }
+        function show(id) { el(id).classList.remove('hidden'); }
+        function hide(id) { el(id).classList.add('hidden'); }
+        
+        function changeView(v) { ['home','battle','import','shop'].forEach(x=>hide(`view-${x}`)); show(`view-${v}`); window.scrollTo(0,0); }
+        function closeModal() { hide('msg-modal'); }
+        function modal(t, d, i) { el('m-title').innerText=t; el('m-desc').innerText=d; el('m-icon').innerText=i; show('msg-modal'); }
+
+        function renderYears() {
+            let h = '', o = '';
+            for(let y=114; y>=104; y--) {
+                h += `<button onclick="switchYear('${y}')" id="yt-${y}" class="year-tab px-4 py-2 rounded-xl text-xs font-bold text-gray-500 bg-white border shadow-sm transition-all">${y}年</button>`;
+                o += `<option value="${y}">${y}年</option>`;
+            }
+            el('year-tabs-container').innerHTML = h;
+            el('i-year').innerHTML = o; el('m-year').innerHTML = o;
+            el('m-year').onchange = updateMCount; el('m-sub').onchange = updateMCount;
+        }
+
+        function switchMode(m) {
+            state.mode = m;
+            if(m === 'year') {
+                show('mode-year-content'); hide('mode-subject-content');
+                el('btn-mode-year').className = "flex-1 py-3 rounded-lg text-xs font-bold bg-white text-indigo-600 shadow-sm";
+                el('btn-mode-subject').className = "flex-1 py-3 rounded-lg text-xs font-bold text-gray-500";
+            } else {
+                hide('mode-year-content'); show('mode-subject-content');
+                el('btn-mode-year').className = "flex-1 py-3 rounded-lg text-xs font-bold text-gray-500";
+                el('btn-mode-subject').className = "flex-1 py-3 rounded-lg text-xs font-bold bg-white text-indigo-600 shadow-sm";
+            }
+            updateStats();
+        }
+
+        function switchYear(y) {
+            state.year = y;
+            els('.year-tab').forEach(e => { e.className="year-tab px-4 py-2 rounded-xl text-xs font-bold text-gray-500 bg-white border shadow-sm"; });
+            const t = el(`yt-${y}`); if(t) { t.className="year-tab px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-md transform scale-105"; t.scrollIntoView({behavior:'smooth',inline:'center'}); }
+            el('year-display').innerText = `${y}年`;
+            updateStats();
+        }
+
+        function updateStats() {
+            let total = 0, yTotal = 0, errTotal = 0;
+            // 計算總題庫 & 錯題
+            for(let y in db) for(let s in db[y]) total += db[y][s].length;
+            for(let s in state.errs) errTotal += state.errs[s].length;
+            
+            els('.total-db-display').forEach(e => e.innerText = `總: ${total}`);
+            els('.error-count-display').forEach(e => e.innerText = errTotal);
+
+            // 計算當前顯示區塊
+            els('.quest-count').forEach(e => {
+                const s = e.dataset.sub;
+                let c = 0;
+                if(state.mode === 'year') {
+                    if(db[state.year] && db[state.year][s]) c = db[state.year][s].length;
+                } else {
+                    for(let y in db) if(db[y][s]) c += db[y][s].length;
+                }
+                e.innerText = `${c} 題`;
+                if(state.mode==='year') yTotal += c;
+            });
+            if(el('year-q-count')) el('year-q-count').innerText = state.mode==='year' ? yTotal : total;
+
+            // 更新錯題標籤
+            els('.error-badge').forEach(e => {
+                const s = e.dataset.sub;
+                const ec = state.errs[s] ? state.errs[s].length : 0;
+                e.innerText = `${ec}錯`;
+                e.style.display = ec > 0 ? 'block' : 'none';
+            });
+        }
+
+        function updateUI() {
+            el('coin-count').innerText = state.coin;
+            el('level-circle').innerText = state.lv;
+            el('xp-bar').style.width = `${(state.xp % (100*state.lv))/(100*state.lv)*100}%`;
+            save();
+        }
+
+        // 導入與解析 V4
+        function doImport() {
+            const y = el('i-year').value, s = el('i-sub').value, qT = el('i-q').value; 
+            let aT = el('i-a').value;
+            if(!qT || !aT) return modal("錯誤", "請貼上內容", "❌");
+            
+            try {
+                aT = aT.replace(/[\uFF21-\uFF3A]/g, c => String.fromCharCode(c.charCodeAt(0)-65248));
+                const ans = aT.replace(/[^A-E#]/gi, '').match(/[A-E#]+/gi);
+                const qBlocks = qT.replace(/--- PAGE \d+ ---/g,'\n').split(/(?:\r\n|\r|\n)\s*(\d+)[\.\s]/);
+                let parsed = [];
+                
+                for(let i=1; i<qBlocks.length; i+=2) {
+                    const id = parseInt(qBlocks[i]), content = qBlocks[i+1];
+                    if(!content) continue;
+                    const parts = content.split(/\s[A-D][\.\s]/);
+                    if(parts.length >= 4) {
+                        const opts = parts.slice(1).map(o=>o.trim());
+                        if(opts.length>=3) {
+                            const aStr = ans && (id-1 < ans.length) ? ans[id-1] : null;
+                            let cIdx = [];
+                            if(aStr) {
+                                if(aStr.includes('A')) cIdx.push(0); if(aStr.includes('B')) cIdx.push(1);
+                                if(aStr.includes('C')) cIdx.push(2); if(aStr.includes('D')) cIdx.push(3);
+                            }
+                            if(cIdx.length) parsed.push({id, q:`${id}. ${parts[0].trim()}`, options:opts.slice(0,4), correct:cIdx});
+                        }
+                    }
+                }
+                if(parsed.length) {
+                    parsed.sort((a,b)=>a.id-b.id);
+                    db[y][s] = parsed.map(p=>({q:p.q, options:p.options, correct:p.correct}));
+                    updateStats(); modal("成功", `匯入 ${parsed.length} 題`, "✨");
+                    el('i-q').value=''; el('i-a').value='';
+                } else modal("失敗", "無法解析", "⚠️");
+            } catch(e) { modal("錯誤", "格式異常", "⚠️"); }
+        }
+
+        // 戰鬥邏輯
+        let session = {};
+        function startDungeon(sub) {
+            let pool = [], errs = state.errs[sub] || [];
+            if(state.mode === 'year') {
+                if(sub === 'mixed') Object.values(db[state.year]).forEach(a => pool.push(...a));
+                else pool = db[state.year][sub] || [];
+            } else {
+                for(let y in db) {
+                    if(sub === 'mixed') Object.values(db[y]).forEach(a => pool.push(...a));
+                    else if(db[y][sub]) pool.push(...db[y][sub]);
+                }
+            }
+            if(pool.length===0 && errs.length===0) return modal("空", "無題目", "📂");
+
+            let quiz = [];
+            if(errs.length > 0) quiz = shuffle([...errs]).slice(0, 5);
+            let need = 10 - quiz.length;
+            if(need > 0 && pool.length > 0) quiz = [...quiz, ...shuffle([...pool]).slice(0, need)];
+            
+            session = { list: shuffle(quiz), idx: 0, correct: 0, sub: sub };
+            changeView('battle');
+            el('battle-subject').innerText = shortMap[sub] || sub;
+            el('battle-year-tag').innerText = state.mode==='year'?`${state.year}年`:'全科';
+            renderQ();
+        }
+
+        function renderQ() {
+            const q = session.list[session.idx];
+            el('battle-progress').innerText = `${session.idx+1}/${session.list.length}`;
+            el('question-text').innerText = q.q;
+            el('battle-error-tag').classList.toggle('hidden', !q.isError);
+            el('options-box').innerHTML = q.options.map((o,i)=>
+                `<button onclick="ans(${i},this)" class="option-btn w-full bg-white p-4 rounded-xl border text-left font-bold text-gray-700 shadow-sm flex gap-3"><span class="bg-slate-100 rounded px-2 text-sm">${String.fromCharCode(65+i)}</span><span>${o}</span></button>`
+            ).join('');
+        }
+
+        function ans(i, btn) {
+            if(btn.disabled) return;
+            const q = session.list[session.idx];
+            els('.option-btn').forEach(b=>b.disabled=true);
+            const isRight = q.correct.includes(i);
+            
+            if(isRight) {
+                btn.classList.add('bg-green-100', 'border-green-500');
+                session.correct++; state.coin+=10; state.xp+=10;
+                if(q.isError) {
+                    state.errs[session.sub] = state.errs[session.sub].filter(x=>x.q!==q.q);
+                    modal("讚", "已移除錯題", "🔥");
+                }
+                setTimeout(nextQ, 800);
+            } else {
+                btn.classList.add('bg-red-50', 'border-red-500');
+                q.correct.forEach(c => els('.option-btn')[c].classList.add('bg-green-50', 'border-green-500'));
+                if(!q.isError) state.errs[session.sub].push({...q, isError:true});
+                setTimeout(nextQ, 1500);
+            }
+            updateUI();
+        }
+
+        function nextQ() {
+            session.idx++;
+            if(session.idx < session.list.length) renderQ();
+            else { modal("完成", `答對 ${session.correct} 題`, "🏆"); changeView('home'); updateStats(); }
+        }
+
+        function useItem() {
+            if(el('view-battle').classList.contains('hidden')) return modal("提示","戰鬥中才可用","ℹ️");
+            if(state.coin<100) return modal("不足","需100金幣","💸");
+            const q = session.list[session.idx], wrongs = [];
+            q.options.forEach((_,i)=>{if(!q.correct.includes(i)) wrongs.push(i)});
+            if(wrongs.length<2) return;
+            shuffle(wrongs).slice(0,2).forEach(i=>els('.option-btn')[i].classList.add('opacity-20'));
+            state.coin-=100; updateUI();
+        }
+
+        // 管理功能
+        function switchTab(t) {
+            ['import','manage','backup'].forEach(x=>{
+                el(`tab-${x}`).className="flex-1 py-2 text-xs font-bold rounded-lg text-gray-500";
+                hide(`panel-${x}`);
+            });
+            el(`tab-${t}`).className="flex-1 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-indigo-600";
+            show(`panel-${t}`);
+            if(t==='manage') updateMCount();
+        }
+        function updateMCount() {
+            const y=el('m-year').value, s=el('m-sub').value;
+            let c=0;
+            if(s==='all') Object.values(db[y]).forEach(a=>c+=a.length);
+            else c = db[y][s].length;
+            el('m-count').innerText = c;
+        }
+        function doClear() {
+            const y=el('m-year').value, s=el('m-sub').value, c=el('m-count').innerText;
+            if(c==0) return modal("無資料","0筆","ℹ️");
+            if(confirm(`刪除 ${c} 筆?`)) {
+                if(s==='all') db[y]={pathology:[],pharmacology:[],diagnosis:[],general:[],infectious:[],public:[]};
+                else db[y][s]=[];
+                updateStats(); updateMCount(); modal("已刪除","","🗑️");
+            }
+        }
+        function clearErrors() {
+            if(confirm("清空所有錯題?")) {
+                state.errs = {pathology:[],pharmacology:[],diagnosis:[],general:[],infectious:[],public:[]};
+                updateStats(); modal("已清空","","✨");
+            }
+        }
+        function doExport() { el('b-code').value=JSON.stringify({state,db}); }
+        function doRestore() { try{ const d=JSON.parse(el('b-code').value); state=d.state; db=d.db; save(); location.reload(); }catch(e){modal("錯誤","代碼無效","❌");} }
+
+        function checkDaily() {
+            const t = new Date().toDateString();
+            if(state.lastDate !== t) { state.lastDate = t; state.daily = [{t:"練習一次",max:1,cur:0},{t:"答對10題",max:10,cur:0}]; }
+            el('daily-quest-list').innerHTML = state.daily.map(q=>
+                `<div class="flex justify-between text-xs p-2 bg-gray-50 rounded border ${q.cur>=q.max?'bg-green-50':''}"><span class="${q.cur>=q.max?'line-through':''}">${q.t}</span><span>${q.cur}/${q.max}</span></div>`
+            ).join('');
+        }
+        function shuffle(a) { return a.sort(()=>Math.random()-0.5); }
+    </script>
+</body>
+</html>
